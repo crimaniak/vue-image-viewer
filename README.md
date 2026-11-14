@@ -29,6 +29,14 @@ allow-git=root
 npm may warn that the package's `prepare` script was blocked. You can ignore that:
 npm already built the package while downloading it, so `dist/` is there.
 
+To upgrade to a newer tag, uninstall the old version first. With `allow-git=root`, npm
+refuses to replace a git dependency that is already installed.
+
+```sh
+npm uninstall @crimaniak/vue-image-viewer
+npm install github:crimaniak/vue-image-viewer#v0.2.0
+```
+
 ```ts
 import { ImageViewer } from '@crimaniak/vue-image-viewer'
 import '@crimaniak/vue-image-viewer/style.css'
