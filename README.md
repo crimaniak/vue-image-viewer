@@ -13,8 +13,10 @@ reusable library. The OS launchers and installers are left out.
 
 ## Install
 
+Install from GitHub. npm builds the package during install.
+
 ```sh
-npm install @crimaniak/vue-image-viewer
+npm install github:crimaniak/vue-image-viewer#v0.1.0
 ```
 
 ```ts
