@@ -6,7 +6,13 @@ export type Theme = 'auto' | 'light' | 'dark'
 export interface ImageViewerProps {
   /** Image URL. Empty shows the "No image" message. */
   src?: string
-  /** Name shown in the toolbar. Defaults to the decoded file name from `src`. */
+  /**
+   * SVG markup to show instead of `src`. Takes priority over `src` when not empty.
+   * Shown through a blob URL, so scripts and external resources in it don't load.
+   * The root `<svg>` needs `xmlns="http://www.w3.org/2000/svg"`.
+   */
+  svg?: string
+  /** Name shown in the toolbar. Defaults to the decoded file name from `src`, or "SVG" for `svg`. */
   name?: string
   /** `alt` text of the image. */
   alt?: string
@@ -36,6 +42,7 @@ export interface ImageViewerProps {
 }
 
 export interface ImageLoadInfo {
+  /** The URL that was loaded (a `blob:` URL for the `svg` prop). */
   src: string
   width: number
   height: number

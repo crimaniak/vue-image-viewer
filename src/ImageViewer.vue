@@ -21,6 +21,7 @@ defineOptions({ name: 'ImageViewer' })
 
 const props = withDefaults(defineProps<ImageViewerProps>(), {
   src: '',
+  svg: '',
   name: undefined,
   alt: '',
   toolbar: true,
@@ -43,10 +44,10 @@ const emit = defineEmits<{
 defineSlots<{
   /** Extra toolbar content, after the built-in buttons. */
   'toolbar-actions'?: () => unknown
-  /** Shown when `src` is empty. */
+  /** Shown when both `src` and `svg` are empty. */
   empty?: () => unknown
   /** Shown when the image fails to load. */
-  error?: (props: { src: string }) => unknown
+  error?: (props: { src: string; svg: boolean }) => unknown
 }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -66,7 +67,26 @@ const loaded = computed(() => status.value === 'loaded')
 const limits = computed(() =>
   scaleLimits(natural.value, frameSize.value, { min: props.minScale, max: props.maxScale }),
 )
-const displayName = computed(() => props.name ?? (props.src ? fileName(props.src) : ''))
+// The `svg` prop is shown through a blob URL that this component owns.
+const svgUrl = ref('')
+function revokeSvgUrl() {
+  if (svgUrl.value) URL.revokeObjectURL(svgUrl.value)
+  svgUrl.value = ''
+}
+watch(
+  () => props.svg,
+  (svg) => {
+    revokeSvgUrl()
+    if (svg) svgUrl.value = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
+  },
+  { immediate: true },
+)
+const fromSvg = computed(() => !!svgUrl.value)
+const source = computed(() => svgUrl.value || props.src)
+
+const displayName = computed(
+  () => props.name ?? (fromSvg.value ? 'SVG' : props.src ? fileName(props.src) : ''),
+)
 const dimsText = computed(() =>
   intrinsicSize.value ? `${natural.value.w} × ${natural.value.h}` : 'no intrinsic size',
 )
@@ -257,6 +277,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  revokeSvgUrl()
   window.removeEventListener('resize', onResize)
   window.removeEventListener('keydown', onWindowKeydown)
 })
@@ -264,7 +285,7 @@ onBeforeUnmount(() => {
 // ---------------------------------------------------------------- load --
 
 watch(
-  () => props.src,
+  source,
   (src) => {
     drag = null
     panning.value = false
@@ -289,12 +310,12 @@ function onLoad() {
   status.value = 'loaded'
   // Fitted in the same tick the image becomes visible: no flash at 100%.
   zoomAll()
-  emit('load', { src: props.src, width: w, height: h, intrinsicSize: hasSize })
+  emit('load', { src: source.value, width: w, height: h, intrinsicSize: hasSize })
 }
 
 function onError() {
   status.value = 'error'
-  emit('error', props.src)
+  emit('error', source.value)
 }
 
 defineExpose<ImageViewerExposed>({ zoomIn, zoomOut, zoomAll, zoom100, zoomTo, zoomBy, panBy, getView })
@@ -369,7 +390,7 @@ defineExpose<ImageViewerExposed>({ zoomIn, zoomOut, zoomAll, zoom100, zoomTo, zo
         <slot name="toolbar-actions" />
       </div>
       <div class="viv-info">
-        <span class="viv-info-name" :title="src || undefined">{{ displayName }}</span>
+        <span class="viv-info-name" :title="fromSvg ? undefined : src || undefined">{{ displayName }}</span>
         <span v-if="loaded" class="viv-info-dims">{{ dimsText }}</span>
         <span v-if="loaded" class="viv-info-zoom">{{ formatZoom(view.scale) }}</span>
       </div>
@@ -391,14 +412,14 @@ defineExpose<ImageViewerExposed>({ zoomIn, zoomOut, zoomAll, zoom100, zoomTo, zo
     >
       <div v-if="checkerboard && loaded" class="viv-checker" :style="checkerStyle" />
       <img
-        v-if="src && status !== 'error'"
+        v-if="source && status !== 'error'"
         v-show="loaded"
-        :key="src"
+        :key="source"
         ref="img"
         class="viv-image"
         :class="{ 'viv-pixelated': view.scale > pixelatedAbove }"
         :style="imageStyle"
-        :src="src"
+        :src="source"
         :alt="alt"
         draggable="false"
         @load="onLoad"
@@ -408,7 +429,7 @@ defineExpose<ImageViewerExposed>({ zoomIn, zoomOut, zoomAll, zoom100, zoomTo, zo
       <div v-if="status === 'empty'" class="viv-message">
         <slot name="empty">
           <h1>No image</h1>
-          <p>Set the <code>src</code> property to an image URL.</p>
+          <p>Set the <code>src</code> property to an image URL, or <code>svg</code> to SVG markup.</p>
           <table>
             <tbody>
               <tr><td><kbd>+</kbd> / wheel</td><td>Zoom in</td></tr>
@@ -421,9 +442,13 @@ defineExpose<ImageViewerExposed>({ zoomIn, zoomOut, zoomAll, zoom100, zoomTo, zo
         </slot>
       </div>
       <div v-else-if="status === 'error'" class="viv-message" role="alert">
-        <slot name="error" :src="src">
+        <slot name="error" :src="source" :svg="fromSvg">
           <h1>Cannot load image</h1>
-          <p><code>{{ src }}</code></p>
+          <p v-if="fromSvg">
+            The SVG markup is not a valid image. The root element needs
+            <code>xmlns="http://www.w3.org/2000/svg"</code>.
+          </p>
+          <p v-else><code>{{ src }}</code></p>
         </slot>
       </div>
     </main>

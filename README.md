@@ -48,6 +48,19 @@ The viewer fills its container, so give the container a height.
 </template>
 ```
 
+### SVG from a string
+
+```vue
+<ImageViewer :svg="markup" name="diagram.svg" />
+```
+
+The component shows the markup through a blob URL. It frees the URL when the
+markup changes or the component unmounts. New markup is fitted again, like a new `src`.
+
+- The root `<svg>` needs `xmlns="http://www.w3.org/2000/svg"`, or the viewer shows "Cannot load image".
+- Give the SVG `width` and `height` if you can. Without them the browser may not report a size, and the viewer then uses `fallbackSize` for both sides.
+- The browser shows it in a restricted mode, like any SVG in an `<img>`. Scripts don't run, and external fonts, images and stylesheets aren't loaded. This makes it safe for SVG from untrusted sources.
+
 ## Controls
 
 | Action | Keyboard | Mouse | Toolbar |
@@ -65,7 +78,8 @@ Keys pressed with Ctrl, Alt or Cmd are left to the browser.
 | Prop | Type | Default | |
 |---|---|---|---|
 | `src` | `string` | `''` | Image URL. Empty shows a "No image" help screen. |
-| `name` | `string` | file name from `src` | Name shown in the toolbar (useful for blob URLs). |
+| `svg` | `string` | `''` | SVG markup to show. Takes priority over `src`. See [SVG from a string](#svg-from-a-string). |
+| `name` | `string` | file name from `src`, or `SVG` | Name shown in the toolbar (useful for blob URLs). |
 | `alt` | `string` | `''` | |
 | `toolbar` | `boolean` | `true` | |
 | `keyboard` | `'focus' \| 'global' \| 'none'` | `'focus'` | `focus`: keys work while the viewer has focus. It takes focus on click. `global`: keys are read on `window`, except while typing in form fields. |
@@ -86,7 +100,7 @@ Keys pressed with Ctrl, Alt or Cmd are left to the browser.
 
 - `toolbar-actions`: extra toolbar content after the built-in buttons. The `viv-btn`, `viv-btn-text` and `viv-sep` classes match the built-in look.
 - `empty`: replaces the "No image" screen.
-- `error` (`{ src }`): replaces the "Cannot load image" screen.
+- `error` (`{ src, svg }`): replaces the "Cannot load image" screen. `svg` is true when the `svg` prop was being shown.
 
 ## Methods (template ref)
 
@@ -111,7 +125,7 @@ URL, and `fileName`. The component does not apply `resolveSrc` to `src`: on the 
 ## Development
 
 ```sh
-npm run dev        # demo: full-window viewer, ?src=<url>, "Open…" button, drag and drop
+npm run dev        # demo: full-window viewer, ?src=<url> or ?svg=<markup>, "Open…", drag and drop, paste SVG
 npm test           # vitest: view math + component tests (jsdom)
 npm run typecheck
 npm run build      # dist/: ES + UMD bundles, style.css, .d.ts

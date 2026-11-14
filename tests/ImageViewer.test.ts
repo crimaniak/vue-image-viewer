@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ImageViewer from '../src/ImageViewer.vue'
@@ -268,5 +268,56 @@ describe('ImageViewer', () => {
     await nextTick()
     const events = wr.emitted('view-change')!
     expect(events[events.length - 1][0]).toEqual({ scale: 0.25, x: 10, y: 150, fitMode: false })
+  })
+
+  describe('svg prop', () => {
+    // jsdom has no blob URLs: fake them and record what is created and revoked.
+    let created: Blob[]
+    let revoked: string[]
+    beforeEach(() => {
+      created = []
+      revoked = []
+      vi.stubGlobal('URL', Object.assign(class extends URL {}, {
+        createObjectURL: (b: Blob) => { created.push(b); return `blob:test/${created.length}` },
+        revokeObjectURL: (u: string) => { revoked.push(u) },
+      }))
+    })
+    afterEach(() => { vi.unstubAllGlobals() })
+
+    const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>'
+
+    test('shows the markup through a blob URL, taking priority over src', async () => {
+      const wr = mountViewer({ svg: SVG, src: 'ignored.png' })
+      expect(created).toHaveLength(1)
+      expect(created[0].type).toBe('image/svg+xml')
+      expect(await created[0].text()).toBe(SVG)
+      expect(wr.find('img').attributes('src')).toBe('blob:test/1')
+      expect(wr.find('.viv-info-name').text()).toBe('SVG')
+    })
+
+    test('a new string replaces and revokes the old URL; unmount revokes the last', async () => {
+      const wr = mountViewer({ svg: SVG })
+      await wr.setProps({ svg: SVG.replace('200', '300') })
+      expect(revoked).toEqual(['blob:test/1'])
+      expect(wr.find('img').attributes('src')).toBe('blob:test/2')
+      wr.unmount()
+      wrapper = null
+      expect(revoked).toEqual(['blob:test/1', 'blob:test/2'])
+    })
+
+    test('empty svg falls back to src', async () => {
+      const wr = mountViewer({ svg: SVG, src: 'a.png' })
+      await wr.setProps({ svg: '' })
+      expect(revoked).toEqual(['blob:test/1'])
+      expect(wr.find('img').attributes('src')).toBe('a.png')
+      expect(wr.find('.viv-info-name').text()).toBe('a.png')
+    })
+
+    test('invalid markup shows an SVG-specific error', async () => {
+      const wr = mountViewer({ svg: '<svg/>' })
+      await wr.find('img').trigger('error')
+      expect(wr.find('.viv-message').text()).toContain('xmlns')
+      expect(wr.emitted('error')![0]).toEqual(['blob:test/1'])
+    })
   })
 })
