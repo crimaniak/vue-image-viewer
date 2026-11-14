@@ -1,7 +1,7 @@
 # vue-image-viewer
 
 A Vue 3 image viewer component written in TypeScript. It is a port of
-[os_image_viewer](../os_image_viewer) with the same view behavior, packaged as a
+[os_image_viewer](https://github.com/crimaniak/os_image_viewer) with the same view behavior, packaged as a
 reusable library. The OS launchers and installers are left out.
 
 - Opens fitted to the frame. Small images are enlarged too.
