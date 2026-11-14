@@ -16,7 +16,7 @@ reusable library. The OS launchers and installers are left out.
 Install from GitHub. npm builds the package during install.
 
 ```sh
-npm install github:crimaniak/vue-image-viewer#v0.1.0
+npm install github:crimaniak/vue-image-viewer#v0.2.0
 ```
 
 npm 12 and later don't fetch git dependencies by default. Allow the ones listed in
