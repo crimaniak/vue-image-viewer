@@ -1,4 +1,4 @@
-# vue-image-viewer
+# @crimaniak/vue-image-viewer
 
 A Vue 3 image viewer component written in TypeScript. It is a port of
 [os_image_viewer](https://github.com/crimaniak/os_image_viewer) with the same view behavior, packaged as a
@@ -14,12 +14,12 @@ reusable library. The OS launchers and installers are left out.
 ## Install
 
 ```sh
-npm install vue-image-viewer
+npm install @crimaniak/vue-image-viewer
 ```
 
 ```ts
-import { ImageViewer } from 'vue-image-viewer'
-import 'vue-image-viewer/style.css'
+import { ImageViewer } from '@crimaniak/vue-image-viewer'
+import '@crimaniak/vue-image-viewer/style.css'
 ```
 
 Or register it globally: `app.use(ImageViewerPlugin)`.
