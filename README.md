@@ -19,6 +19,16 @@ Install from GitHub. npm builds the package during install.
 npm install github:crimaniak/vue-image-viewer#v0.1.0
 ```
 
+npm 12 and later don't fetch git dependencies by default. Allow the ones listed in
+your project's `package.json` by adding this line to the project's `.npmrc`:
+
+```ini
+allow-git=root
+```
+
+npm may warn that the package's `prepare` script was blocked. You can ignore that:
+npm already built the package while downloading it, so `dist/` is there.
+
 ```ts
 import { ImageViewer } from '@crimaniak/vue-image-viewer'
 import '@crimaniak/vue-image-viewer/style.css'
